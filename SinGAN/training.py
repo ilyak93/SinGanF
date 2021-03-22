@@ -193,6 +193,7 @@ def train_single_scale(netD,netG,reals,Gs,Zs,in_s,NoiseAmp,opt,centers=None):
             optimizerG.step()
 
         errG2plot.append(errG.detach()+rec_loss)
+		errG2recplot.append(rec_loss.detach())
         D_real2plot.append(D_x)
         D_fake2plot.append(D_G_z)
         z_opt2plot.append(rec_loss)
