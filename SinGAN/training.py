@@ -91,7 +91,7 @@ def train_single_scale(netD,netG,reals,Gs,Zs,in_s,NoiseAmp,opt,centers=None):
     D_real2plot = []
     D_fake2plot = []
     z_opt2plot = []
-errG2recplot = []
+    errG2recplot = []
 
     for epoch in range(opt.niter):
         if (Gs == []) & (opt.mode != 'SR_train'):
