@@ -104,7 +104,7 @@ class FullSelfAttn(nn.Module):
 
 class WDiscriminatorFSA(nn.Module):
     def __init__(self, opt):
-        super(MyWDiscriminator, self).__init__()
+        super(WDiscriminatorFSA, self).__init__()
         self.is_cuda = torch.cuda.is_available()
         N = int(opt.nfc)
         self.head = ConvBlock(opt.nc_im, N, opt.ker_size, opt.padd_size, 1)
@@ -129,7 +129,7 @@ class WDiscriminatorFSA(nn.Module):
 
 class GeneratorConcatSkip2CleanAddFSA(nn.Module):
     def __init__(self, opt):
-        super(MyGeneratorConcatSkip2CleanAdd, self).__init__()
+        super(GeneratorConcatSkip2CleanAddFSA, self).__init__()
         self.is_cuda = torch.cuda.is_available()
         N = opt.nfc
         self.head = ConvBlock(opt.nc_im, N, opt.ker_size, opt.padd_size,
