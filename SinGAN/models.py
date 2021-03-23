@@ -277,7 +277,7 @@ class AxialDecLWDiscriminator(nn.Module):
     def forward(self, x):
         x = self.head(x)
         x = self.body(x)
-        if hasattr(self, 'attn'):
+        if hasattr(self, 'image_transformer_layer'):
             x = self.image_transformer_layer(x)
         x = self.tail(x)
         return x
@@ -311,7 +311,7 @@ class AxialDecLGeneratorConcatSkip2CleanAdd(nn.Module):
     def forward(self, x, y):
         x = self.head(x)
         x = self.body(x)
-        if hasattr(self, 'attn'):
+        if hasattr(self, 'image_transformer_layer'):
             x = self.image_transformer_layer(x)
         x = self.tail(x)
         ind = int((y.shape[2] - x.shape[2]) / 2)
