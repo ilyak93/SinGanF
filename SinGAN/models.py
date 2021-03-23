@@ -114,7 +114,7 @@ class WDiscriminatorFSA(nn.Module):
             block = ConvBlock(max(2 * N, opt.min_nfc), max(N, opt.min_nfc), opt.ker_size, opt.padd_size, 1)
             self.body.add_module('block%d' % (i + 1), block)
         if opt.attn == True:
-            self.attn = Self_Attn( max(N, opt.min_nfc))
+            self.attn = FullSelfAttn( max(N, opt.min_nfc))
         self.tail = nn.Conv2d(max(N, opt.min_nfc), 1, kernel_size=opt.ker_size, stride=1, padding=opt.padd_size)
 
     def forward(self, x):
@@ -140,7 +140,7 @@ class GeneratorConcatSkip2CleanAddFSA(nn.Module):
             block = ConvBlock(max(2 * N, opt.min_nfc), max(N, opt.min_nfc), opt.ker_size, opt.padd_size, 1)
             self.body.add_module('block%d' % (i + 1), block)
         if opt.attn == True:
-            self.attn = Self_Attn(max(N, opt.min_nfc))
+            self.attn = FullSelfAttn(max(N, opt.min_nfc))
         self.tail = nn.Sequential(
             nn.Conv2d(max(N, opt.min_nfc), opt.nc_im, kernel_size=opt.ker_size, stride=1, padding=opt.padd_size),
             nn.Tanh()
