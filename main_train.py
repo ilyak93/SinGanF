@@ -16,7 +16,6 @@ if __name__ == '__main__':
     reals = []
     NoiseAmp = []
     dir2save = functions.generate_dir2save(opt)
-    torch.backends.cudnn.deterministic = True
 
     if (os.path.exists(dir2save)):
         print('trained model already exist')

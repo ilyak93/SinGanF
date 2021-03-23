@@ -249,11 +249,11 @@ class DecoderAxionalLayer(nn.Module):
 
     # Takes care of the "postprocessing" from tensorflow code with the layernorm and dropout
     def forward(self, X):
-        y = self.attn(X).permute([0,2,3,1]).contiguous()
-        X = self.layernorm_attn(y + X.permute([0,2,3,1]).contiguous())
+        y = self.attn(X)
+        X = self.layernorm_attn(y + X]))
         y = self.ffn(X)
         X = self.layernorm_ffn(y + X)
-        return X.permute([0,3,1,2]).contiguous()
+        return X
 
 class AxialDecLWDiscriminator(nn.Module):
     def __init__(self, opt):
@@ -269,7 +269,7 @@ class AxialDecLWDiscriminator(nn.Module):
         if opt.attn == True:
             self.attn = DecoderAxionalLayer(
                 dim=max(N, opt.min_nfc),  # embedding dimension
-                dim_index=1,  # where is the embedding dimension
+                dim_index=3,  # where is the embedding dimension
                 # dim_heads = 32,        # dimension of each head. defaults to dim // heads if not supplied
                 heads=4,  # number of heads for multi-head attention
                 num_dimensions=2,  # number of axial dimensions (images is 2, video is 3, or more)
@@ -280,7 +280,7 @@ class AxialDecLWDiscriminator(nn.Module):
         x = self.head(x)
         x = self.body(x)
         if hasattr(self, 'attn'):
-            x = self.attn(x)
+            x = self.attn(x.permute([0,2,3,1]).contiguous()).permute([0,3,1,2]).contiguous()
         x = self.tail(x)
         return x
 
@@ -300,7 +300,7 @@ class AxialDecLGeneratorConcatSkip2CleanAdd(nn.Module):
         if opt.attn == True:
             self.attn = DecoderAxionalLayer(
                 dim=max(N, opt.min_nfc),  # embedding dimension
-                dim_index=1,  # where is the embedding dimension
+                dim_index=3,  # where is the embedding dimension
                 # dim_heads = 32,        # dimension of each head. defaults to dim // heads if not supplied
                 heads=4,  # number of heads for multi-head attention
                 num_dimensions=2,  # number of axial dimensions (images is 2, video is 3, or more)
@@ -314,7 +314,7 @@ class AxialDecLGeneratorConcatSkip2CleanAdd(nn.Module):
         x = self.head(x)
         x = self.body(x)
         if hasattr(self, 'attn'):
-            x = self.attn(x)
+            x = self.attn(x.permute([0,2,3,1]).contiguous()).permute([0,3,1,2]).contiguous()
         x = self.tail(x)
         ind = int((y.shape[2] - x.shape[2]) / 2)
         y = y[:, :, ind:(y.shape[2] - ind), ind:(y.shape[3] - ind)]
