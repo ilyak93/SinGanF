@@ -236,9 +236,11 @@ class AxialGeneratorConcatSkip2CleanAdd(nn.Module):
 
 class DecoderAxionalLayer(nn.Module):
     """Implements a single layer of an unconditional ImageTransformer"""
-    def __init__(self, dim, dim_index ,heads , num_dimensions, sum_axial_out):
+    def __init__(self, dim, dim_index, heads, num_dimensions, sum_axial_out):
         super().__init__()
-        self.attn = AxialAttention(dim, dim_index ,heads , num_dimensions, sum_axial_out)
+        self.attn = AxialAttention(dim=dim, dim_index=dim_index,
+                                   heads=heads , num_dimensions=num_dimensions,
+                                   sum_axial_out=sum_axial_out)
         self.layernorm_attn = nn.LayerNorm([dim], eps=1e-6, elementwise_affine=True)
         self.layernorm_ffn = nn.LayerNorm([dim], eps=1e-6, elementwise_affine=True)
         self.ffn = nn.Sequential(nn.Linear(dim, 2*dim, bias=True),
@@ -247,11 +249,11 @@ class DecoderAxionalLayer(nn.Module):
 
     # Takes care of the "postprocessing" from tensorflow code with the layernorm and dropout
     def forward(self, X):
-        y = self.attn(X)
-        X = self.layernorm_attn(self.dropout(y) + X)
+        y = self.attn(X).permute([0,2,3,1]).contiguous()
+        X = self.layernorm_attn(y + X.permute([0,2,3,1]).contiguous())
         y = self.ffn(X)
-        X = self.layernorm_ffn(self.dropout(y) + X)
-        return X
+        X = self.layernorm_ffn(y + X)
+        return X.permute([0,3,1,2]).contiguous()
 
 class AxialDecLWDiscriminator(nn.Module):
     def __init__(self, opt):
