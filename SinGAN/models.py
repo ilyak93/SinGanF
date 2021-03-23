@@ -255,7 +255,7 @@ class DecoderAxionalLayer(nn.Module):
 
 class AxialDecLWDiscriminator(nn.Module):
     def __init__(self, opt):
-        super(My24WDiscriminator, self).__init__()
+        super(AxialDecLWDiscriminator, self).__init__()
         self.is_cuda = torch.cuda.is_available()
         N = int(opt.nfc)
         self.head = ConvBlock(opt.nc_im, N, opt.ker_size, opt.padd_size, 1)
@@ -285,7 +285,7 @@ class AxialDecLWDiscriminator(nn.Module):
 
 class AxialDecLGeneratorConcatSkip2CleanAdd(nn.Module):
     def __init__(self, opt):
-        super(My24GeneratorConcatSkip2CleanAdd, self).__init__()
+        super(AxialDecLGeneratorConcatSkip2CleanAdd, self).__init__()
         self.is_cuda = torch.cuda.is_available()
         N = opt.nfc
         self.head = ConvBlock(opt.nc_im, N, opt.ker_size, opt.padd_size,
