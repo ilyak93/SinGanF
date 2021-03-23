@@ -321,17 +321,24 @@ def train_paint(opt,Gs,Zs,reals,NoiseAmp,centers,paint_inject_scale):
 def init_models(opt):
 
     #generator initialization:
-    netG = models.GeneratorConcatSkip2CleanAddFSA(opt).to(opt.device)
+    netG = models.AxialGeneratorConcatSkip2CleanAdd(opt).to(opt.device)
     netG.apply(models.weights_init)
     if opt.netG != '':
         netG.load_state_dict(torch.load(opt.netG))
     print(netG)
+    total_params = sum(p.numel() for p in netG.parameters())
+    train_params = sum(p.numel() for p in netG.parameters() if p.requires_grad)
+    print(f'number of parameters of generator: total={total_params} train={train_params}')
+    
 
     #discriminator initialization:
-    netD = models.WDiscriminatorFSA(opt).to(opt.device)
+    netD = models.AxialWDiscriminator(opt).to(opt.device)
     netD.apply(models.weights_init)
     if opt.netD != '':
         netD.load_state_dict(torch.load(opt.netD))
     print(netD)
+    total_params = sum(p.numel() for p in netD.parameters())
+    train_params = sum(p.numel() for p in netD.parameters() if p.requires_grad)
+    print(f'number of parameters of generator: total={total_params} train={train_params}')
 
     return netD, netG
