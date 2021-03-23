@@ -265,7 +265,7 @@ class AxialDecLWDiscriminator(nn.Module):
             block = ConvBlock(max(2 * N, opt.min_nfc), max(N, opt.min_nfc), opt.ker_size, opt.padd_size, 1)
             self.body.add_module('block%d' % (i + 1), block)
         if opt.attn == True:
-            self.image_transformer_layer = DecoderAxionalLayer(
+            self.attn = DecoderAxionalLayer(
                 dim=max(N, opt.min_nfc),  # embedding dimension
                 dim_index=1,  # where is the embedding dimension
                 # dim_heads = 32,        # dimension of each head. defaults to dim // heads if not supplied
@@ -277,8 +277,8 @@ class AxialDecLWDiscriminator(nn.Module):
     def forward(self, x):
         x = self.head(x)
         x = self.body(x)
-        if hasattr(self, 'image_transformer_layer'):
-            x = self.image_transformer_layer(x)
+        if hasattr(self, 'attn'):
+            x = self.attn(x)
         x = self.tail(x)
         return x
 
@@ -296,7 +296,7 @@ class AxialDecLGeneratorConcatSkip2CleanAdd(nn.Module):
             block = ConvBlock(max(2 * N, opt.min_nfc), max(N, opt.min_nfc), opt.ker_size, opt.padd_size, 1)
             self.body.add_module('block%d' % (i + 1), block)
         if opt.attn == True:
-            self.image_transformer_layer = DecoderAxionalLayer(
+            self.attn = DecoderAxionalLayer(
                 dim=max(N, opt.min_nfc),  # embedding dimension
                 dim_index=1,  # where is the embedding dimension
                 # dim_heads = 32,        # dimension of each head. defaults to dim // heads if not supplied
@@ -311,8 +311,8 @@ class AxialDecLGeneratorConcatSkip2CleanAdd(nn.Module):
     def forward(self, x, y):
         x = self.head(x)
         x = self.body(x)
-        if hasattr(self, 'image_transformer_layer'):
-            x = self.image_transformer_layer(x)
+        if hasattr(self, 'attn'):
+            x = self.attn(x)
         x = self.tail(x)
         ind = int((y.shape[2] - x.shape[2]) / 2)
         y = y[:, :, ind:(y.shape[2] - ind), ind:(y.shape[3] - ind)]
