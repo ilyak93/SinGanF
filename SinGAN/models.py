@@ -250,7 +250,7 @@ class DecoderAxionalLayer(nn.Module):
     # Takes care of the "postprocessing" from tensorflow code with the layernorm and dropout
     def forward(self, X):
         y = self.attn(X)
-        X = self.layernorm_attn(y + X]))
+        X = self.layernorm_attn(y + X))
         y = self.ffn(X)
         X = self.layernorm_ffn(y + X)
         return X
