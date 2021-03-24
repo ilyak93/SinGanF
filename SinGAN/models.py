@@ -591,7 +591,7 @@ def get_divs(n):
         if (n % i == 0):
             divs.add(i)
         i=i+1
-    return divs
+    return list(divs)
 
 
 
