@@ -609,9 +609,14 @@ class WDiscriminatorViT(nn.Module):
         if opt.attn == True:
             h, w = opt.image_size
             im_sz = h if h > w else w
-            patch_size = math.gcd(h,w)
+            gd = math.gcd(h,w)
+            divs = get_divs(gd)
+            if len(divs) == 1:
+                gd = 1
+            else:
+                gd = divs[-1]
             self.attn = ViT(image_size=im_sz, dim=max(N, opt.min_nfc),
-                            patch_size=patch_size, depth=1,
+                            patch_size=gd, depth=1,
                             heads=4, out_dim=max(N, opt.min_nfc), channels=32)
         self.tail = nn.Conv2d(max(N, opt.min_nfc), 1, kernel_size=opt.ker_size, stride=1, padding=opt.padd_size)
 
@@ -640,9 +645,14 @@ class GeneratorConcatSkip2CleanAddViT(nn.Module):
         if opt.attn == True:
             h, w = opt.image_size
             im_sz = h if h > w else w
-            patch_size = math.gcd(h, w)
+            gd = math.gcd(h,w)
+            divs = get_divs(gd)
+            if len(divs) == 1:
+                gd = 1
+            else:
+                gd = divs[-1]
             self.attn = ViT(image_size=im_sz, dim=max(N, opt.min_nfc),
-                            patch_size=patch_size, depth=1,
+                            patch_size=gd, depth=1,
                             heads=4, out_dim=max(N, opt.min_nfc), channels=32)
         self.tail = nn.Sequential(
             nn.Conv2d(max(N, opt.min_nfc), opt.nc_im, kernel_size=opt.ker_size, stride=1, padding=opt.padd_size),
