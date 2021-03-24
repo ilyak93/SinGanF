@@ -553,7 +553,7 @@ class DecoderLinearAttnLayer(nn.Module):
         y = self.attn(X)
         X = self.layernorm_attn((y + X).permute([0,2,3,1]).contiguous())
         y = self.ffn(X)
-        X = self.layernorm_attn(y + X).permute([0,3,1,2].contiguous())
+        X = self.layernorm_attn(y + X).permute([0,3,1,2]).contiguous()
         return X
 
 
