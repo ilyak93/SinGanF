@@ -333,7 +333,7 @@ def train_paint(opt,Gs,Zs,reals,NoiseAmp,centers,paint_inject_scale):
 def init_models(opt):
 
     #generator initialization:
-    netG = models.LinformerGeneratorConcatSkip2CleanAdd(opt).to(opt.device)
+    netG = models.LinearDecGeneratorConcatSkip2CleanAdd(opt).to(opt.device)
     netG.apply(models.weights_init)
     if opt.netG != '':
         netG.load_state_dict(torch.load(opt.netG))
@@ -344,7 +344,7 @@ def init_models(opt):
     
 
     #discriminator initialization:
-    netD = models.LinformerWDiscriminator(opt).to(opt.device)
+    netD = models.LinearDecWDiscriminator(opt).to(opt.device)
     netD.apply(models.weights_init)
     if opt.netD != '':
         netD.load_state_dict(torch.load(opt.netD))
