@@ -574,7 +574,6 @@ class LinearDecWDiscriminator(nn.Module):
                 chan=max(N, opt.min_nfc), heads=4,
                 key_dim=64  # can be decreased to 32 for more memory savings
             )
-            self.gamma = nn.Parameter(torch.zeros(1))
 
     def forward(self, x):
         x = self.head(x)
@@ -607,7 +606,6 @@ class LinearDecGeneratorConcatSkip2CleanAdd(nn.Module):
                 chan=max(N, opt.min_nfc), heads=4,
                 key_dim=64  # can be decreased to 32 for more memory savings
             )
-            self.gamma = nn.Parameter(torch.zeros(1))
 
     def forward(self, x, y):
         x = self.head(x)
