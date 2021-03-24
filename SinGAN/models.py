@@ -464,140 +464,15 @@ class ImageAttnGeneratorConcatSkip2CleanAdd(nn.Module):
         y = y[:, :, ind:(y.shape[2] - ind), ind:(y.shape[3] - ind)]
         return x + y
         
-
         
 
-import torch
-from torch import nn, einsum
-import torch.nn.functional as F
-
-from einops import rearrange
-from einops.layers.torch import Rearrange
-
-class Residual(nn.Module):
-    def __init__(self, fn):
-        super().__init__()
-        self.fn = fn
-    def forward(self, x, **kwargs):
-        return self.fn(x, **kwargs) + x
-
-class PreNrm(nn.Module):
-    def __init__(self, dim, fn):
-        super().__init__()
-        self.norm = nn.LayerNorm(dim)
-        self.fn = fn
-    def forward(self, x, **kwargs):
-        return self.fn(self.norm(x), **kwargs)
-
-class FeedForward(nn.Module):
-    def __init__(self, dim, hidden_dim, dropout = 0.):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(dim, hidden_dim),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_dim, dim),
-            nn.Dropout(dropout)
-        )
-    def forward(self, x):
-        return self.net(x)
-
-class Attention(nn.Module):
-    def __init__(self, dim, heads = 8, dim_head = 64, dropout = 0.):
-        super().__init__()
-        inner_dim = dim_head *  heads
-        project_out = not (heads == 1 and dim_head == dim)
-
-        self.heads = heads
-        self.scale = dim_head ** -0.5
-
-        self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
-
-        self.to_out = nn.Sequential(
-            nn.Linear(inner_dim, dim),
-            nn.Dropout(dropout)
-        ) if project_out else nn.Identity()
-
-    def forward(self, x):
-        b, n, _, h = *x.shape, self.heads
-        qkv = self.to_qkv(x).chunk(3, dim = -1)
-        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), qkv)
-
-        dots = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
-
-        attn = dots.softmax(dim=-1)
-
-        out = einsum('b h i j, b h j d -> b h i d', attn, v)
-        out = rearrange(out, 'b h n d -> b n (h d)')
-        out =  self.to_out(out)
-        return out
-
-class Transformer(nn.Module):
-    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout = 0.):
-        super().__init__()
-        self.layers = nn.ModuleList([])
-        for _ in range(depth):
-            self.layers.append(nn.ModuleList([
-                Residual(PreNrm(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout))),
-                Residual(PreNrm(dim, FeedForward(dim, mlp_dim, dropout = dropout)))
-            ]))
-    def forward(self, x):
-        for attn, ff in self.layers:
-            x = attn(x)
-            x = ff(x)
-        return x
-
-class ViT(nn.Module):
-    def __init__(self, *, image_size, patch_size, dim, depth, heads, out_dim, pool = 'cls', channels = 3, dim_head = 64, dropout = 0., emb_dropout = 0.):
-        super().__init__()
-        assert image_size % patch_size == 0, 'Image dimensions must be divisible by the patch size.'
-        num_patches = (image_size // patch_size) ** 2
-        patch_dim = channels * patch_size ** 2
-        assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
-
-        self.to_patch_embedding = nn.Sequential(
-            Rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1 = patch_size, p2 = patch_size),
-            nn.Linear(patch_dim, dim),
-        )
-
-        self.pos_embedding = nn.Parameter(torch.randn(1, num_patches, dim))
-
-        self.dropout = nn.Dropout(emb_dropout)
-
-        self.transformer = Transformer(dim, depth, heads, dim_head, out_dim, dropout)
-
-        self.mlp_head = nn.Sequential(
-            nn.LayerNorm(dim),
-            nn.Linear(dim, patch_dim)
-        )
-
-    def forward(self, img):
-        x = self.to_patch_embedding(img)
-        b, n, _ = x.shape
-
-        x = self.dropout(x)
-
-        x = self.transformer(x)
-
-        x = self.mlp_head(x)
-
-        return x
-
-
-def get_divs(n):
-    i = 1
-    divs = set()
-    while i <= math.sqrt(n):
-        if (n % i == 0):
-            divs.add(i)
-        i=i+1
-    return list(divs)
+from linear_attention_transformer.images import ImageLinearAttention
 
 
 
-class WDiscriminatorViT(nn.Module):
+class LinformerWDiscriminator(nn.Module):
     def __init__(self, opt):
-        super(WDiscriminatorViT, self).__init__()
+        super(LinformerWDiscriminator, self).__init__()
         self.is_cuda = torch.cuda.is_available()
         N = int(opt.nfc)
         self.head = ConvBlock(opt.nc_im, N, opt.ker_size, opt.padd_size, 1)
@@ -606,33 +481,26 @@ class WDiscriminatorViT(nn.Module):
             N = int(opt.nfc / pow(2, (i + 1)))
             block = ConvBlock(max(2 * N, opt.min_nfc), max(N, opt.min_nfc), opt.ker_size, opt.padd_size, 1)
             self.body.add_module('block%d' % (i + 1), block)
-        if opt.attn == True:
-            h, w = opt.image_size
-            im_sz = h if h > w else w
-            gd = math.gcd(h,w)
-            divs = get_divs(gd)
-            if len(divs) == 1:
-                gd = 1
-            else:
-                gd = divs[-1]
-            self.attn = ViT(image_size=im_sz, dim=max(N, opt.min_nfc),
-                            patch_size=gd, depth=1,
-                            heads=4, out_dim=max(N, opt.min_nfc), channels=32)
         self.tail = nn.Conv2d(max(N, opt.min_nfc), 1, kernel_size=opt.ker_size, stride=1, padding=opt.padd_size)
+        if opt.attn == True:
+            self.attn =ImageLinearAttention(
+                        chan = max(N, opt.min_nfc), heads = 4,
+                        key_dim = 64       # can be decreased to 32 for more memory savings
+                        )
+            self.gamma = nn.Parameter(torch.zeros(1))
 
     def forward(self, x):
         x = self.head(x)
         x = self.body(x)
-        _ ,_ ,h, w = x.size()
         if hasattr(self, 'attn'):
-            x = self.attn(x).view(1, -1, h, w)
+            x = self.gamma * self.attn(x) + x
         x = self.tail(x)
         return x
 
 
-class GeneratorConcatSkip2CleanAddViT(nn.Module):
+class LinformerGeneratorConcatSkip2CleanAdd(nn.Module):
     def __init__(self, opt):
-        super(GeneratorConcatSkip2CleanAddViT, self).__init__()
+        super(LinformerGeneratorConcatSkip2CleanAdd, self).__init__()
         self.is_cuda = torch.cuda.is_available()
         N = opt.nfc
         self.head = ConvBlock(opt.nc_im, N, opt.ker_size, opt.padd_size,
@@ -642,33 +510,29 @@ class GeneratorConcatSkip2CleanAddViT(nn.Module):
             N = int(opt.nfc / pow(2, (i + 1)))
             block = ConvBlock(max(2 * N, opt.min_nfc), max(N, opt.min_nfc), opt.ker_size, opt.padd_size, 1)
             self.body.add_module('block%d' % (i + 1), block)
-        if opt.attn == True:
-            h, w = opt.image_size
-            im_sz = h if h > w else w
-            gd = math.gcd(h,w)
-            divs = get_divs(gd)
-            if len(divs) == 1:
-                gd = 1
-            else:
-                gd = divs[-1]
-            self.attn = ViT(image_size=im_sz, dim=max(N, opt.min_nfc),
-                            patch_size=gd, depth=1,
-                            heads=4, out_dim=max(N, opt.min_nfc), channels=32)
+
         self.tail = nn.Sequential(
             nn.Conv2d(max(N, opt.min_nfc), opt.nc_im, kernel_size=opt.ker_size, stride=1, padding=opt.padd_size),
             nn.Tanh()
         )
+        if opt.attn == True:
+            self.attn = ImageLinearAttention(
+                chan=max(N, opt.min_nfc), heads=4,
+                key_dim=64  # can be decreased to 32 for more memory savings
+            )
+            self.gamma = nn.Parameter(torch.zeros(1))
 
     def forward(self, x, y):
         x = self.head(x)
         x = self.body(x)
-        _, _, h, w = x.size()
         if hasattr(self, 'attn'):
-            x = self.attn(x).view(1, -1, h, w)
+            x = self.gamma * self.attn(x) + x
         x = self.tail(x)
         ind = int((y.shape[2] - x.shape[2]) / 2)
         y = y[:, :, ind:(y.shape[2] - ind), ind:(y.shape[3] - ind)]
         return x + y
-
-
+       
+       
+       
+       
 
