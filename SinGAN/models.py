@@ -561,10 +561,15 @@ class ViT(nn.Module):
         )
 
         self.pos_embedding = nn.Parameter(torch.randn(1, num_patches, dim))
-        self.cls_token = nn.Parameter(torch.randn(1, 1, dim))
+
         self.dropout = nn.Dropout(emb_dropout)
 
         self.transformer = Transformer(dim, depth, heads, dim_head, out_dim, dropout)
+
+        self.mlp_head = nn.Sequential(
+            nn.LayerNorm(dim),
+            nn.Linear(dim, patch_dim)
+        )
 
     def forward(self, img):
         x = self.to_patch_embedding(img)
@@ -573,6 +578,8 @@ class ViT(nn.Module):
         x = self.dropout(x)
 
         x = self.transformer(x)
+
+        x = self.mlp_head(x)
 
         return x
 
