@@ -551,9 +551,9 @@ class DecoderLinearAttnLayer(nn.Module):
     # Takes care of the "postprocessing" from tensorflow code with the layernorm and dropout
     def forward(self, X):
         y = self.attn(X)
-        X = self.layernorm_attn((y + X).permute([0,2,3,1]))
+        X = self.layernorm_attn((y + X).permute([0,2,3,1]).contiguous())
         y = self.ffn(X)
-        X = self.layernorm_attn(y + X).permute([0,3,1,2])
+        X = self.layernorm_attn(y + X).permute([0,3,1,2].contiguous())
         return X
 
 
